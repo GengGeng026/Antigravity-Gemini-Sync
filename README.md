@@ -14,9 +14,11 @@
 **[English]**
 When using Google Antigravity IDE on a MacBook, all session states are stored locally. If you want to continue the conversation seamlessly using the **Gemini Mobile App** (Voice/Live mode), you hit a wall: The mobile app cannot read local files, and has heavy indexing delays when searching for synced `.md/.txt` files.
 
-**本計畫透過「雙軌同步系統」解決此問題 (This project solves that by creating a dual-track sync system):**
+**本計畫透過「雙向自動化同步系統」解決此問題 (This project solves that by creating an automated bidirectional sync system):**
 1. ✅ **本地符號連結 (Local Symlink)**: 自動接管 Mac IDE 的對話歷史。
-2. ✅ **雲端 API (Cloud API - Google Apps Script)**: 即時覆寫原生 **Google Docs** 檔案。由於 Google Docs 格式在雲端硬碟的搜尋優先級最高且無延遲，手機端能瞬間讀取最新討論進度。
+2. ✅ **雙向雲端 API (Bidirectional Cloud API)**: 
+    - **輸出 (Outbound)**: Mac 端自動覆寫雲端 Google Docs，讓手機端 Gemini 秒讀。
+    - **輸入 (Inbound)**: 手機端更新時，雲端同步寫入 `.txt` 檔案並回傳 Mac。IDE Agent 在新對話開始時會「主動開啟」橋接檔，實現「最後一哩路」的自動感知。
 
 ---
 
