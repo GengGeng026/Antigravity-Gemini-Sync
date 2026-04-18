@@ -18,7 +18,7 @@ When using Google Antigravity IDE on a MacBook, all session states are stored lo
 1. ✅ **本地符號連結 (Local Symlink)**: 自動接管 Mac IDE 的對話歷史。
 2. ✅ **雙向雲端 API (Bidirectional Cloud API)**: 
     - **輸出 (Outbound)**: Mac 端自動覆寫雲端 Google Docs，讓手機端 Gemini 秒讀。
-    - **輸入 (Inbound)**: 手機端更新時，雲端同步寫入 `.txt` 檔案並回傳 Mac。IDE Agent 在新對話開始時會「主動開啟」橋接檔，實現「最後一哩路」的自動感知。
+    - **輸入 (Inbound)**: 雲端設有 **「自動監視器 (Background Sync)」**，每 5 分鐘自動對齊 Doc 與 Txt。IDE Agent 在對話開始時會「主動感讀」，實現真正的「最後一哩路」自動感知。
 
 ---
 
