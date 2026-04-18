@@ -1,87 +1,82 @@
-# Antigravity-Gemini-Sync 🚀
+# Antigravity-Gemini-Sync 🚀 | 跨設備同步橋接
 
+> **Bilingual Edition / 雙語版本**
 > A robust, cross-device synchronization bridge between the **Antigravity IDE (macOS)** and the **Gemini Mobile App (Android/iOS)**.
-
-## 🌟 Why this exists?
-
-When using Google Antigravity IDE on a MacBook, all your "Brain" memories and session states are stored locally. However, if you want to leave your desk and continue the exact same conversation seamlessly using the Voice/Live mode of the **Gemini Mobile App**, you hit a wall: The Gemini App cannot directly read local IDE files, and has heavy indexing delays when searching for `.md` or `.txt` files synced via virtual Google Drive.
-
-**This project solves that by creating a dual-track sync system:**
-1. ✅ **Local Symlink & Bash Script**: Automatically captures your Mac IDE session state.
-2. ✅ **Cloud API (Google Apps Script)**: Instantly overwrites a native Google Docs file, bypassing Google Drive's search indexing delays. Gemini Mobile can search and read native Google Docs instantly.
+> 一套強大的跨設備同步橋接方案，連接 **MacBook 上的 Antigravity IDE** 與 **手機端的 Gemini App**。
 
 ---
 
-## 🛠️ Architecture
+## 🌟 Why this exists? | 為什麼需要這個？
+
+**[中文]**
+當你在 MacBook 上使用 Google Antigravity IDE 時，所有的對話記憶與 session 狀態都保存在本地。如果你想離開座位，改用手機端的 Gemini App（特別是語音/Live 模式）繼續剛才的討論，你會遇到困難：手機端無法讀取 IDE 的本地檔案，且 Google Drive 搜尋對於同步過去的 `.md` 或 `.txt` 檔案有嚴重的索引延遲。
+
+**[English]**
+When using Google Antigravity IDE on a MacBook, all session states are stored locally. If you want to continue the conversation seamlessly using the **Gemini Mobile App** (Voice/Live mode), you hit a wall: The mobile app cannot read local files, and has heavy indexing delays when searching for synced `.md/.txt` files.
+
+**本計畫透過「雙軌同步系統」解決此問題 (This project solves that by creating a dual-track sync system):**
+1. ✅ **本地符號連結 (Local Symlink)**: 自動接管 Mac IDE 的對話歷史。
+2. ✅ **雲端 API (Cloud API - Google Apps Script)**: 即時覆寫原生 **Google Docs** 檔案。由於 Google Docs 格式在雲端硬碟的搜尋優先級最高且無延遲，手機端能瞬間讀取最新討論進度。
+
+---
+
+## 🛠️ Architecture | 系統架構
 
 ```text
 MacBook (Antigravity IDE) 
    │
-   ├─ 1. End of session triggers `ag-handover.sh`
-   └─ 2. Sends HTTP POST request (with secure token)
+   ├─ 1. 對話結束自動觸發 `ag-handover.sh` (End of turn triggers script)
+   └─ 2. 發送安全 HTTP POST 請求 (Sends secure API request)
          ▼
-[Google Cloud] Apps Script Web API  ← Verifies token
+[Google Cloud] Apps Script Web API  ← 驗證帳密後執行 (Verifies token)
          ▼
-[Google Drive] GEMINI_BRIDGE_DOC (Native Google Docs format)
+[Google Drive] GEMINI_BRIDGE_DOC (原生 Google Docs 格式)
          ▲
-         └─ 3. Instantly searchable & readable by Gemini Mobile App!
+         └─ 3. 手機端 Gemini App 瞬間搜尋並讀取！(Instant mobile access!)
 ```
 
 ---
 
-## 🚀 Setup Guide for Beginners
+## 🚀 Setup Guide | 搭建指南
 
-Follow these steps to set up this sync on your own machine.
+### Step 1: 建立雲端目標文件 (Create Google Docs)
+1. 在瀏覽器打開 Google Drive，進入想要存放的資料夾。
+2. 新建一份 **Google 文件 (Google Docs)**，命名為 `GEMINI_BRIDGE_DOC`。
+3. 複製網址列中間的 ID（例如：`1s2dJHSdqOGjRSef5RDSxWhaHlmiEFI8rd4Cw1VHJF4U`）。
 
-### Step 1: Create the Cloud Target (Google Docs)
-1. Open your Google Drive in a browser.
-2. Create a new Folder (e.g., `AG_Sync/handover/`).
-3. Inside, create a new **Google Docs** file. Name it `GEMINI_BRIDGE_DOC`.
-4. Look at the URL in your browser. Copy the long ID string between `/d/` and `/edit`.
-   *(Example: `1s2dJHSdqOGjRSef5RDSxWhaHlmiEFI8rd4Cw1VHJF4U`)*
+### Step 2: 部署雲端 API (Deploy Apps Script API)
+1. 前往 [script.google.com](https://script.google.com/) 並新建專案。
+2. 將本倉庫中 `google-apps-script/Code.gs` 的代碼貼入。
+3. 修改程式碼中的 `AUTH_TOKEN` (你的密碼) 與 `TARGET_DOC_ID` (步驟 1 的 ID)。
+4. 點擊 **部署 (Deploy) > 新增部署作業**。類型選「**網頁應用程式 (Web App)**」，存取權選「**所有人 (Anyone)**」。
+5. **重要**：執行一次測試並授權權限，並複製產出的 **Web App URL**。
 
-### Step 2: Deploy the Cloud API (Google Apps Script)
-1. Go to [script.google.com](https://script.google.com/).
-2. Create a "New Project" and name it `Antigravity Handover API`.
-3. Copy the code from `google-apps-script/Code.gs` in this repository and paste it into the editor.
-4. Modify these two lines in the code:
-   - `AUTH_TOKEN`: Create your own secret password.
-   - `TARGET_DOC_ID`: Paste the ID you copied in Step 1.
-5. Click **Deploy** -> **New Deployment**.
-6. Choose **Web App**.
-   - Execute as: **Me**
-   - Who has access: **Anyone** *(Your Auth Token keeps it safe)*
-7. Authorize the app if prompted.
-8. Copy the **Web App URL** provided at the end.
-
-### Step 3: Configure the Local Script (macOS)
-1. Copy the `local-scripts/ag-handover.sh` file to a secure place (e.g., `~/.gemini/antigravity/scripts/`).
-2. Open the script and modify the `Configuration` section at the top:
-   - `GAS_URL`: Paste your Web App URL from Step 2.
-   - `AUTH_TOKEN`: Paste the exact password you used in Step 2.
-3. Make the script executable:
+### Step 3: 配置本地腳本 (Configure macOS Script)
+1. 將 `local-scripts/ag-handover.sh` 存入 `~/.gemini/antigravity/scripts/`。
+2. 修改腳本頂部的 `Configuration` 區塊，填入你的 `GAS_URL` 與 `AUTH_TOKEN`。
+3. 賦予執行權限：
    ```bash
    chmod +x ~/.gemini/antigravity/scripts/ag-handover.sh
-   # Optional: Create a symlink in your bin folder for easy access
    ln -s ~/.gemini/antigravity/scripts/ag-handover.sh ~/bin/ag-handover
    ```
 
-### Step 4: Automate it in Antigravity (GEMINI.md)
-To make your AI Agent run this automatically, add this rule to your IDE's global `GEMINI.md` file:
+### Step 4: 在 Antigravity 中自動化 (Automate in IDE)
+將以下規則加入到 IDE 的全域 `GEMINI.md` 規範中：
 
 ```markdown
-### Cross-Device Handover Automation
-**Background**: User switches between Mac (Antigravity IDE) and Mobile (Gemini App). Handover must be instant.
-**Agent Duty**:
-- At the end of every response/turn, the Agent **MUST automatically** execute `/Users/mac/.gemini/antigravity/scripts/ag-handover.sh` in the background (silent execution).
-- When the user returns from mobile, the Agent should ask if they want to load the latest state from Google Docs.
+### 跨設備交接自動化 (Handover Automation)
+- **職責**: 每輪回覆結束後，Agent 必須自動執行 `ag-handover.sh` 靜默更新雲端狀態。
+- **Duties**: After every response, the Agent MUST automatically execute the sync script.
 ```
 
-## 🎉 How to Use
-1. Finish chatting with Antigravity on your Mac. Close the lid.
-2. Open the Gemini App on your phone.
-3. Say: **"Please search my Google Drive for GEMINI_BRIDGE_DOC and read the latest status so we can continue."**
-4. Gemini will read the exact state you left off at!
+---
+
+## 🎉 How to Use | 如何使用
+
+1. **Mac 端**: 像平常一樣聊天。每當我回答完，雲端就會自動更新。
+2. **手機端**: 打開 Gemini App，說出：
+   > **「請在我的 Google Drive 搜尋 GEMINI_BRIDGE_DOC，讀取最新進度，我們繼續討論。」**
+3. 手機端的 AI 會立刻同步到你在 Mac 上的最後思緒。
 
 ---
-*Created with ❤️ by Antigravity IDE and G-Dragon.*
+*Created with ❤️ by Antigravity IDE and G-Dragon (@GengGeng026).*
