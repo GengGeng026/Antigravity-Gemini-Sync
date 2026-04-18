@@ -16,21 +16,40 @@ function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
     if (payload.token !== SECRETS.AUTH_TOKEN) return response("Error: Unauthorized");
-    if (!payload.content) return response("Error: No content");
-
-    // 取得當前雲端內容
+    
     const doc = DocumentApp.openById(SECRETS.TARGET_DOC_ID);
-    const existingContent = doc.getBody().getText();
+    const body = doc.getBody();
+    const oldContent = body.getText();
+    
+    // --- 保護邏輯：提取手機端區塊 ---
+    let mobileContent = "(目前尚無新紀錄)";
+    const mobileHeader = "## 📱 【手機端即時紀錄 (Mobile Updates)】";
+    const divider = "------------------------------------------";
+    
+    if (oldContent.includes(mobileHeader)) {
+      const parts = oldContent.split(mobileHeader);
+      if (parts.length > 1) {
+        const subParts = parts[1].split(divider);
+        mobileContent = subParts[0].trim(); // 提取出手機寫入的內容
+      }
+    }
+    
+    // --- 合併邏輯：將手機內容塞進 Mac 的新模板中 ---
+    let finalContent = payload.content;
+    if (finalContent.includes(mobileHeader)) {
+      const templateParts = finalContent.split(mobileHeader);
+      const afterHeader = templateParts[1].split(divider);
+      // 組合：Mac上部 + Header + 手機內容 + 分隔線 + Mac下部
+      finalContent = templateParts[0] + mobileHeader + "\n" + mobileContent + "\n" + divider + afterHeader[1];
+    }
 
-    // 簡單的保護邏輯：如果雲端有最新的「維護紀錄」而推播的內容沒有，
-    // 這通常意味著 Mac 腳本過時或正在洗掉手機紀錄。
-    // 在這種情況下，我們可以選擇合併或報錯，目前先強制保護執行 Mac 端腳本後的合併
-    updateCloudFiles(payload.content);
-    return response("Success: Synced Outbound");
+    updateCloudFiles(finalContent);
+    return response("Success: Synced with Protection");
   } catch (err) {
     return response("Error: " + err.message);
   }
 }
+
 
 /**
  * 定時觸發器執行的函式：從 Doc 同步回 Txt (Inbound - 最後一哩路)
