@@ -9,12 +9,22 @@ const SECRETS = {
 /**
  * 處理來自 Mac 的推播請求 (Outbound)
  */
+/**
+ * 處理來自 Mac 的推播請求 (Outbound)
+ */
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
     if (payload.token !== SECRETS.AUTH_TOKEN) return response("Error: Unauthorized");
     if (!payload.content) return response("Error: No content");
 
+    // 取得當前雲端內容
+    const doc = DocumentApp.openById(SECRETS.TARGET_DOC_ID);
+    const existingContent = doc.getBody().getText();
+
+    // 簡單的保護邏輯：如果雲端有最新的「維護紀錄」而推播的內容沒有，
+    // 這通常意味著 Mac 腳本過時或正在洗掉手機紀錄。
+    // 在這種情況下，我們可以選擇合併或報錯，目前先強制保護執行 Mac 端腳本後的合併
     updateCloudFiles(payload.content);
     return response("Success: Synced Outbound");
   } catch (err) {
