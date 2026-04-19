@@ -1,4 +1,4 @@
-/* Antigravity Handover Web API - V15 Clean Architecture
+/* Antigravity Handover Web API - V19 Clean Architecture
  *
  * 修復重點：
  * - 完全棄用 split/pop 重拼邏輯（污染根源）
@@ -137,4 +137,15 @@ function doGet(e) {
 
 function res(msg) {
   return ContentService.createTextOutput(msg).setMimeType(ContentService.MimeType.TEXT);
+}
+
+function deleteSyncSmartTrigger() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'syncSmart')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  console.log('✅ syncSmart 觸發器已全部刪除');
+}
+
+function syncSmart() {
+  // 已停用，觸發器待清除中
 }
