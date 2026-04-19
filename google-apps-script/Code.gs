@@ -170,14 +170,18 @@ function autoSyncDocToTxt() {
     const docFile    = DriveApp.getFileById(SECRETS.TARGET_DOC_ID);
     const docModified = docFile.getLastUpdated();
 
-    const props      = PropertiesService.getScriptProperties();
-    const lastSync   = new Date(props.getProperty('last_sync_time') || 0);
+    const txtIter = DriveApp.searchFiles(
+      'title = "' + SECRETS.TXT_FILE_NAME + '" and trashed = false'
+    );
+    if (!txtIter.hasNext()) return;
+    const txtModified = txtIter.next().getLastUpdated();
 
-    if (docModified > lastSync) {
+    if (docModified > txtModified) {
       const content = DocumentApp.openById(SECRETS.TARGET_DOC_ID).getBody().getText();
       syncToTxt(content);
-      props.setProperty('last_sync_time', docModified.toISOString());
-      console.log('✅ autoSync: Doc 有更新，已同步至 .txt');
+      console.log('✅ autoSync: Doc 較新，已同步至 .txt');
+    } else {
+      console.log('⏭ autoSync: .txt 較新或相同，略過');
     }
   } catch (err) {
     console.error('autoSyncDocToTxt 失敗: ' + err.message);
