@@ -149,6 +149,11 @@ function doPost(e) {
   }
 }
 
+// 在 push 成功後、pull action 後都加這行：
+PropertiesService.getScriptProperties()
+  .setProperty('txt_protected_until', 
+    (Date.now() + 3 * 60 * 1000).toString()); // 保護 3 分鐘
+
 // ─── GET：讓 Antigravity 用 curl GET 也能拉取內容 ──────────────────
 function doGet(e) {
   try {
@@ -167,21 +172,23 @@ function res(msg) {
 // ─── 每分鐘自動檢查 Doc 是否更新，有更新才同步至 .txt ─────────────────
 function autoSyncDocToTxt() {
   try {
-    const docFile    = DriveApp.getFileById(SECRETS.TARGET_DOC_ID);
+    // 若 .txt 剛被 push/pull 更新過（3 分鐘內），跳過
+    const props = PropertiesService.getScriptProperties();
+    const protectedUntil = parseInt(props.getProperty('txt_protected_until') || '0');
+    if (Date.now() < protectedUntil) {
+      console.log('⏭ autoSync: .txt 受保護中，略過');
+      return;
+    }
+
+    const docFile     = DriveApp.getFileById(SECRETS.TARGET_DOC_ID);
     const docModified = docFile.getLastUpdated();
+    const lastSync    = new Date(parseInt(props.getProperty('last_doc_sync') || '0'));
 
-    const txtIter = DriveApp.searchFiles(
-      'title = "' + SECRETS.TXT_FILE_NAME + '" and trashed = false'
-    );
-    if (!txtIter.hasNext()) return;
-    const txtModified = txtIter.next().getLastUpdated();
-
-    if (docModified > txtModified) {
+    if (docModified > lastSync) {
       const content = DocumentApp.openById(SECRETS.TARGET_DOC_ID).getBody().getText();
       syncToTxt(content);
+      props.setProperty('last_doc_sync', docModified.getTime().toString());
       console.log('✅ autoSync: Doc 較新，已同步至 .txt');
-    } else {
-      console.log('⏭ autoSync: .txt 較新或相同，略過');
     }
   } catch (err) {
     console.error('autoSyncDocToTxt 失敗: ' + err.message);
