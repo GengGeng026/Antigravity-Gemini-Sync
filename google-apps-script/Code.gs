@@ -26,7 +26,8 @@ function doPost(e) {
     const mobileHeader = "## 📱 【手機端即時紀錄 (Mobile Updates)】";
     const divider = "------------------------------------------";
     
-    if (oldContent.includes(mobileHeader)) {
+    // 若為強制覆寫 (flush)，則跳過提取保護邏輯，允許覆蓋
+    if (payload.overwrite !== true && oldContent.includes(mobileHeader)) {
       const parts = oldContent.split(mobileHeader);
       if (parts.length > 1) {
         const subParts = parts[1].split(divider);
@@ -36,7 +37,7 @@ function doPost(e) {
     
     // --- 合併邏輯：將手機內容塞進 Mac 的新模板中 ---
     let finalContent = payload.content;
-    if (finalContent.includes(mobileHeader)) {
+    if (payload.overwrite !== true && finalContent.includes(mobileHeader)) {
       const templateParts = finalContent.split(mobileHeader);
       const afterHeader = templateParts[1].split(divider);
       // 組合：Mac上部 + Header + 手機內容 + 分隔線 + Mac下部
